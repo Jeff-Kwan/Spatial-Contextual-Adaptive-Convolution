@@ -13,9 +13,9 @@ class SimpleCNN(nn.Module):
         self.relu = nn.ReLU()
         self.fc_out = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(4 * 7 * 7, 128),
+            nn.Linear(4 * 7 * 7, 64),
             nn.ReLU(),
-            nn.Linear(128, 10))
+            nn.Linear(64, 10))
     
 
     def forward(self, x):

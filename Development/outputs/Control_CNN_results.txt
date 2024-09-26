@@ -1,6 +1,6 @@
-Control-CNN - Accuracy of the model on the 10,000 test images: 95.32%
-Control-CNN - Final Training loss: 0.162125363945961
-Control-CNN - Total trainable parameters: 26602
+Control-CNN - Accuracy of the model on the 10,000 test images: 94.58%
+Control-CNN - Final Training loss: 0.16893243789672852
+Control-CNN - Total trainable parameters: 13354
 
 SimpleCNN(
   (scaconv1): Conv2d(1, 2, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
@@ -8,9 +8,9 @@ SimpleCNN(
   (relu): ReLU()
   (fc_out): Sequential(
     (0): Flatten(start_dim=1, end_dim=-1)
-    (1): Linear(in_features=196, out_features=128, bias=True)
+    (1): Linear(in_features=196, out_features=64, bias=True)
     (2): ReLU()
-    (3): Linear(in_features=128, out_features=10, bias=True)
+    (3): Linear(in_features=64, out_features=10, bias=True)
   )
 )
 

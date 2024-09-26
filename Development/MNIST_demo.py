@@ -10,11 +10,11 @@ from SCAConv_dev import SCAConv
 class ContextNN(nn.Module):
     def __init__(self, c_len):
         super(ContextNN, self).__init__()
-        self.reduce1 = nn.Conv2d(1, 1, kernel_size=3, padding=1, stride=2)
-        self.reduce2 = nn.Conv2d(1, 1, kernel_size=3, padding=1, stride=2)
+        self.reduce1 = nn.Conv2d(1, 2, kernel_size=3, padding=1, stride=2)
+        self.reduce2 = nn.Conv2d(2, 4, kernel_size=3, padding=1, stride=2)
         self.fc_context = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(1 * 7 * 7, c_len))
+            nn.Linear(4 * 7 * 7, c_len))
         self.out = nn.Linear(c_len, 10)
 
     def encode(self, x):
@@ -44,9 +44,9 @@ class SCACNN(nn.Module):
         self.relu = nn.ReLU()
         self.fc_out = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(2 * 7 * 7, 128),
+            nn.Linear(2 * 7 * 7, 64),
             nn.ReLU(),
-            nn.Linear(128, 10))
+            nn.Linear(64, 10))
     
 
     def forward(self, x):
