@@ -8,12 +8,12 @@ class SimpleCNN(nn.Module):
     def __init__(self):
         super(SimpleCNN, self).__init__()
         # Simple CNN control
-        self.scaconv1 = nn.Conv2d(1, 25, kernel_size=3, padding=1, stride=2)
-        self.scaconv2 = nn.Conv2d(25, 50, kernel_size=3, padding=1, stride=2)
+        self.scaconv1 = nn.Conv2d(1, 2, kernel_size=3, padding=1, stride=2)
+        self.scaconv2 = nn.Conv2d(2, 4, kernel_size=3, padding=1, stride=2)
         self.relu = nn.ReLU()
         self.fc_out = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(50 * 7 * 7, 128),
+            nn.Linear(4 * 7 * 7, 128),
             nn.ReLU(),
             nn.Linear(128, 10))
     

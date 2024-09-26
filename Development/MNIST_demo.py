@@ -39,12 +39,12 @@ class SCACNN(nn.Module):
         self.context = contextNN
 
         # SCA-CNN
-        self.scaconv1 = SCAConv(1, 16, kernel_size=3, padding=1, stride=2, b=self.b, c_len=self.c_len, condition=True)
-        self.scaconv2 = SCAConv(16, 32, kernel_size=3, padding=1, stride=2, b=self.b, c_len=self.c_len, condition=True)
+        self.scaconv1 = SCAConv(1, 2, kernel_size=3, padding=1, stride=2, b=self.b, c_len=self.c_len, condition=True)
+        self.scaconv2 = SCAConv(2, 2, kernel_size=3, padding=1, stride=2, b=self.b, c_len=self.c_len, condition=True)
         self.relu = nn.ReLU()
         self.fc_out = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(32 * 7 * 7, 128),
+            nn.Linear(2 * 7 * 7, 128),
             nn.ReLU(),
             nn.Linear(128, 10))
     
@@ -83,7 +83,7 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Context encoder pretraining (optional)
-n_epochs = 0
+n_epochs = 1
 context_losses = [] if n_epochs > 0 else ["Not pretrained"]
 print('Pre-training the global context encoder...')
 for epoch in range(n_epochs):
