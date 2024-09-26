@@ -1,5 +1,5 @@
-Control-CNN - Accuracy of the model on the 10,000 test images: 98.43%
-Control-CNN - Final Training loss: 0.08072151988744736
+Control-CNN - Accuracy of the model on the 10,000 test images: 98.52%
+Control-CNN - Final Training loss: 0.02968561090528965
 Control-CNN - Total trainable parameters: 326568
 
 SimpleCNN(

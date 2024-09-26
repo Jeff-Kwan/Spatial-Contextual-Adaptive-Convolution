@@ -29,6 +29,7 @@ def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 # Data loading and transformation
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
 train_data = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
 test_data = datasets.MNIST(root='./data', train=False, download=True, transform=transform)
@@ -37,18 +38,20 @@ train_loader = DataLoader(train_data, batch_size=128, shuffle=True)
 test_loader = DataLoader(test_data, batch_size=128, shuffle=False)
 
 # Initialize the model, loss function, and optimizer
-model = SimpleCNN()
+model = SimpleCNN().to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Train the model
 n_epochs = 3
-b_arr = torch.linspace(0, 1, (n_epochs-1)*len(train_loader))
+b_arr = torch.linspace(0, 1, (n_epochs-1)*len(train_loader)).to(device)
 train_losses = []
 print('Training the Control CNN model...')
 for epoch in range(n_epochs):
     running_loss = 0.0
     for i, (images, labels) in enumerate(train_loader):
+        images = images.to(device)
+        labels = labels.to(device)
         if epoch > 0:
             model.b = b_arr[(epoch-1)*len(train_loader) + i]
         optimizer.zero_grad()
@@ -61,7 +64,8 @@ for epoch in range(n_epochs):
         train_losses.append(loss.item())
 
         if i % 100 == 99:  # Print every 100 batches
-            print(f'Epoch [{epoch+1}/{n_epochs}], Step [{i+1}/{len(train_loader)}], Loss: {loss.item():.4f}')
+            print(f'Epoch [{epoch+1}/{n_epochs}], Step [{i+1}/{len(train_loader)}], Loss: {running_loss/100:.4f}')
+            running_loss = 0.0
 
 
 # Plot training losses over each batch
@@ -70,22 +74,23 @@ plt.xlabel('Batch number')
 plt.ylabel('Loss')
 plt.title('Training Loss over Batches (Control)')
 plt.savefig(r'Spatial-Contextual-Adaptive-Convolution\Development\Outputs\Control_CNN_loss.png')
-plt.show()
 
 # Test the model
 correct = 0
 total = 0
 with torch.no_grad():
     for images, labels in test_loader:
+        images = images.to(device)
+        labels = labels.to(device)
         outputs = model(images)
         _, predicted = torch.max(outputs.data, 1)
         total += labels.size(0)
         correct += (predicted == labels).sum().item()
 accuracy = 100 * correct / total
-print(f'Control CNN Accuracy of the model on the 10,000 test images: {accuracy:.2f}%')
+print(f'Control CNN accuracy on the 10,000 test images: {accuracy:.2f}%')
 
 # Save the test accuracy to the same text file
-with open(r"Spatial-Contextual-Adaptive-Convolution\Development\Outputs\Control_CNN_results.txt", "a") as f:
+with open(r"Spatial-Contextual-Adaptive-Convolution\Development\Outputs\Control_CNN_results.txt", "w") as f:
     total_params = count_parameters(model)
     f.write(f"Control-CNN - Accuracy of the model on the 10,000 test images: {accuracy:.2f}%\n")
     f.write(f"Control-CNN - Final Training loss: {train_losses[-1]}\n")
