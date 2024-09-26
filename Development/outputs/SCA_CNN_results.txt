@@ -1,10 +1,10 @@
-SCA-CNN - Accuracy on the 10,000 test images: 95.03%
-Ablated SCA-CNN - Accuracy on the 10,000 test images: 45.24%
-SCA-CNN - Final Training loss: 0.18900905549526215
+SCA-CNN - Accuracy on the 10,000 test images: 95.98%
+Ablated SCA-CNN - Accuracy on the 10,000 test images: 45.31%
+SCA-CNN - Final Training loss: 0.1584697961807251
 SCA-CNN - Total trainable parameters: 11420
 
-ContextNN - Accuracy on the 10,000 test images: 85.12%
-ContextNN - Final Training loss: 0.45810210704803467
+ContextNN - Accuracy on the 10,000 test images: 9.82%
+ContextNN - Final Training loss: Not pretrained
 ContextNN - Total trainable parameters: 1762
 
 ContextNN(

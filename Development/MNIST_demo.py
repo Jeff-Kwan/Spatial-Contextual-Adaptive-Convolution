@@ -83,7 +83,7 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Context encoder pretraining (optional)
-n_epochs = 1
+n_epochs = 0
 context_losses = [] if n_epochs > 0 else ["Not pretrained"]
 print('Pre-training the global context encoder...')
 for epoch in range(n_epochs):
@@ -115,7 +115,8 @@ for epoch in range(n_epochs):
         images = images.to(device)
         labels = labels.to(device)
         if epoch > 0:
-            model.b = b_arr[(epoch-1)*len(train_loader) + i]
+            model.scaconv1.b = 1#b_arr[(epoch-1)*len(train_loader) + i]
+            model.scaconv2.b = 1#b_arr[(epoch-1)*len(train_loader) + i]
         optimizer.zero_grad()
         outputs = model(images)
         loss = criterion(outputs, labels)
