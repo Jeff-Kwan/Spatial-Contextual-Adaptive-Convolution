@@ -1,0 +1,53 @@
+SCA-CNN - Accuracy of the model on the 10,000 test images: 98.05%
+SCA-CNN - Final Training loss: 0.03502166271209717
+SCA-CNN - Total trainable parameters: 364952
+
+ContextNN - Accuracy of the model on the 10,000 test images: 87.50%
+ContextNN - Final Training loss: 0.45045414566993713
+ContextNN - Total trainable parameters: 510
+
+ContextNN(
+  (reduce1): Conv2d(1, 1, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+  (reduce2): Conv2d(1, 1, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+  (fc_context): Sequential(
+    (0): Flatten(start_dim=1, end_dim=-1)
+    (1): Linear(in_features=49, out_features=8, bias=True)
+  )
+  (out): Linear(in_features=8, out_features=10, bias=True)
+)
+
+SCACNN(
+  (context): ContextNN(
+    (reduce1): Conv2d(1, 1, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+    (reduce2): Conv2d(1, 1, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+    (fc_context): Sequential(
+      (0): Flatten(start_dim=1, end_dim=-1)
+      (1): Linear(in_features=49, out_features=8, bias=True)
+    )
+    (out): Linear(in_features=8, out_features=10, bias=True)
+  )
+  (scaconv1): SCAConv(
+    (unfold): Unfold(kernel_size=(3, 3), dilation=1, padding=(1, 1), stride=(2, 2))
+    (mlp): Sequential(
+      (0): Linear(in_features=10, out_features=32, bias=True)
+      (1): SiLU()
+      (2): Linear(in_features=32, out_features=144, bias=True)
+    )
+  )
+  (scaconv2): SCAConv(
+    (unfold): Unfold(kernel_size=(3, 3), dilation=1, padding=(1, 1), stride=(2, 2))
+    (mlp): Sequential(
+      (0): Linear(in_features=10, out_features=32, bias=True)
+      (1): SiLU()
+      (2): Linear(in_features=32, out_features=4608, bias=True)
+    )
+  )
+  (relu): ReLU()
+  (fc_out): Sequential(
+    (0): Flatten(start_dim=1, end_dim=-1)
+    (1): Linear(in_features=1568, out_features=128, bias=True)
+    (2): ReLU()
+    (3): Linear(in_features=128, out_features=10, bias=True)
+  )
+)
+
