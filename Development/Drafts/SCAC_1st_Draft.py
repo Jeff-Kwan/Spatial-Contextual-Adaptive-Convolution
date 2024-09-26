@@ -1,14 +1,7 @@
 '''
-First Draft of Spatial Contextual Adaptive Convolution.
+First Draft of Spatial Contextual Adaptive Convolution - Conditional.
 Drafted by Kwan Leong Chit Jeff, with aid from Github copilot & ChatGPT4o.
 File darfted on 26-9-2024.
-
-Unconditional spatial varying adaptive convolution with mlp-powered kernel adjustment, 
-and a trainable seed vector. Conceptually similar to applying LoRA on convolutional
-kernels, but during the training stage.
-
-Note the use of training schedule to add the mlp patch adjustment, as well as the small
-weight initialisation as the adjustment should be a small weight injection.
 '''
 
 import torch
