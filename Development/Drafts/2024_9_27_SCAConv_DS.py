@@ -1,28 +1,31 @@
 '''
-First Draft of Spatial-Contextual Adaptive Convolution - Conditional.
+Second Draft of Spatial-Contextual Adaptive Convolution - Conditional.
 Drafted by Kwan Leong Chit Jeff, with aid from Github Copilot & ChatGPT4o.
-Draft copy creation on 2024-09-27.
+Reimplement in depthwise-separable style to mitigate potential high computational load.
 '''
 
 import torch
 import torch.nn as nn
 
-class SCAConv(nn.Module):
+class SCAConv_DS(nn.Module):
+    '''Depthwise-separable version of Spatial-Contextual Adaptive Convolution - Conditional.'''
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, bias=True, b=1, mlp_hidden=16, c_len=8, condition=False):
-        super(SCAConv, self).__init__()
+        super(SCAConv_DS, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.kernel_size = kernel_size if isinstance(kernel_size, tuple) else (kernel_size, kernel_size)
         self.stride = stride if isinstance(stride, tuple) else (stride, stride)
         self.padding = padding if isinstance(padding, tuple) else (padding, padding)
-        self.b = b  # Hyperparameter for patch-specific kernel adjustment
+        self.b = b  # Hyperparameter for adaptivity of kernel
 
         # Unfold will be used to extract sliding local blocks from the input tensor
-        self.unfold = nn.Unfold(kernel_size=self.kernel_size, stride=self.stride, padding=self.padding)
+        self.unfold_D = nn.Unfold(kernel_size=self.kernel_size, stride=self.stride, padding=self.padding)
 
         # Kernel (weights) initialized using Xavier
-        self.kernel = nn.Parameter(torch.empty(out_channels, in_channels * self.kernel_size[0] * self.kernel_size[1]))
-        nn.init.xavier_uniform_(self.kernel)
+        self.kernel_D = nn.Parameter(torch.empty(self.kernel_size[0], self.kernel_size[1]))
+        nn.init.xavier_uniform_(self.kernel_D)
+        self.kernel_P = nn.Parameter(torch.empty(in_channels, out_channels))
+        nn.init.xavier_uniform_(self.kernel_P)
 
         # Bias term
         if bias:
@@ -36,24 +39,36 @@ class SCAConv(nn.Module):
             self.c = nn.Parameter(torch.randn(1, c_len))
 
         # MLP to generate kernel adjustments
-        self.mlp = nn.Sequential(
+        self.mlp_D = nn.Sequential(
             nn.Linear(4 + c_len, mlp_hidden),  # 4 for location embeding
             nn.ReLU(),
-            nn.Linear(mlp_hidden, out_channels * in_channels * self.kernel_size[0] * self.kernel_size[1])
+            nn.Linear(mlp_hidden, self.kernel_size[0] * self.kernel_size[1])
         )
 
-        # Initialize MLP
-        for layer in self.mlp:
+        self.mlp_P = nn.Sequential(
+            nn.Linear(4 + c_len, mlp_hidden),  # 4 for location embeding
+            nn.ReLU(),
+            nn.Linear(mlp_hidden, in_channels * out_channels)
+        )
+
+        # Initialize MLPs
+        for layer in self.mlp_D:
+            if isinstance(layer, nn.Linear):
+                nn.init.xavier_uniform_(layer.weight, gain=1e-1)    # 10x smaller weights
+                nn.init.zeros_(layer.bias)
+        for layer in self.mlp_P:
             if isinstance(layer, nn.Linear):
                 nn.init.xavier_uniform_(layer.weight, gain=1e-1)    # 10x smaller weights
                 nn.init.zeros_(layer.bias)
     
+
     def forward(self, x, c=None):
         # Input dimensions
         batch_size, _, height, width = x.size()
 
+        '''Depthwise Convolution'''
         # Unfold the input to extract patches
-        x_unfolded = self.unfold(x)  # Shape: (batch_size, in_channels * kernel_h * kernel_w, L), L = number of patches
+        x_unfolded = self.unfold_D(x).view(batch_size, self.in_channels, self.kernel_size[0]*self.kernel_size[1], -1)
 
         # Calculate the number of patches in the output
         output_height = (height + 2 * self.padding[0] - self.kernel_size[0]) // self.stride[0] + 1
@@ -73,18 +88,28 @@ class SCAConv(nn.Module):
             c = self.c.unsqueeze(1).expand(batch_size, location_embed.size(1), -1)
             
         # Generate kernel adjustments using MLP
-        adjustments = self.mlp(torch.cat([location_embed, c], dim=-1).view(batch_size*c.size(1), -1)
-                                    ).view(batch_size, self.out_channels, output_width * output_height, -1).transpose(2,3)  # Shape: (out_channels, L, in_channels * kernel_h * kernel_w)
+        adjustments = self.mlp_D(torch.cat([location_embed, c], dim=-1).view(batch_size*c.size(1), -1)).view(batch_size, -1, self.kernel_size[0] * self.kernel_size[1])
 
         # Adaptive kernel adjustment injection
-        adjusted_kernel = self.kernel[None,:,:,None] + self.b * adjustments  # Shape: (batch, out_channels, in_channels * kernel_h * kernel_w, L)
+        adjusted_kernel = self.kernel_D.flatten()[None,None,:] + self.b * adjustments  # Shape: (batch, kernel_h * kernel_w, L)
 
         # Matrix multiplication with einsum
-        out = torch.einsum('bik,boik->bok', x_unfolded, adjusted_kernel)  # Shape: (batch_size, L, out_channels)
+        x = torch.einsum('bikl,blk->bikl', x_unfolded, adjusted_kernel)
+
+
+        '''Pointwise Convolution'''
+        # Generate kernel adjustments using MLP
+        adjustments = self.mlp_P(torch.cat([location_embed, c], dim=-1).view(batch_size*output_height*output_width, -1)).view(batch_size,output_height*output_width,self.in_channels,self.out_channels)
+
+        # Adaptive kernel adjustment injection
+        adjusted_kernel = self.kernel_P[None,:,:] + self.b * adjustments  # Shape: (batch, kernel_h * kernel_w, L)
+        
+        # Matrix multiplication with einsum
+        x = torch.einsum('bikl,blio->bol', x, adjusted_kernel)  # Shape: (batch_size, in_channels, L, out_channels)
 
         # Add bias
         if self.bias is not None:
-            out += self.bias.view(1, -1, 1)
+            x += self.bias.view(1, -1, 1)
 
         # Reshape the output to match expected dimensions
-        return out.view(batch_size, self.out_channels, output_height, output_width)
+        return x.view(batch_size, self.out_channels, output_height, output_width)

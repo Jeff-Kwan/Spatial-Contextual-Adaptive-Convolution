@@ -1,11 +1,11 @@
-SCA-CNN - Accuracy on the 10,000 test images: 95.92%
-Ablated SCA-CNN - Accuracy on the 10,000 test images: 18.32%
-Adaptive-only SCA-CNN - Accuracy on the 10,000 test images: 20.87%
+SCA-CNN - Accuracy on the 10,000 test images: 93.47%
+Ablated SCA-CNN - Accuracy on the 10,000 test images: 13.83%
+Adaptive-only SCA-CNN - Accuracy on the 10,000 test images: 82.14%
 
-SCA-CNN - Final Training loss: 0.12618504464626312
-SCA-CNN - Total trainable parameters: 6361
+SCA-CNN - Final Training loss: 0.1662602424621582
+SCA-CNN - Total trainable parameters: 5081
 
-ContextNN - Accuracy on the 10,000 test images: 45.32%
+ContextNN - Accuracy on the 10,000 test images: 45.08%
 ContextNN - Total trainable parameters: 191
 
 ContextNN(
@@ -21,17 +21,17 @@ SCACNN(
   (scaconv1): SCAConv(
     (unfold): Unfold(kernel_size=(3, 3), dilation=1, padding=(1, 1), stride=(2, 2))
     (mlp): Sequential(
-      (0): Linear(in_features=12, out_features=32, bias=True)
+      (0): Linear(in_features=12, out_features=16, bias=True)
       (1): ReLU()
-      (2): Linear(in_features=32, out_features=18, bias=True)
+      (2): Linear(in_features=16, out_features=18, bias=True)
     )
   )
   (scaconv2): SCAConv(
     (unfold): Unfold(kernel_size=(3, 3), dilation=1, padding=(1, 1), stride=(2, 2))
     (mlp): Sequential(
-      (0): Linear(in_features=12, out_features=32, bias=True)
+      (0): Linear(in_features=12, out_features=16, bias=True)
       (1): ReLU()
-      (2): Linear(in_features=32, out_features=36, bias=True)
+      (2): Linear(in_features=16, out_features=36, bias=True)
     )
   )
   (relu): ReLU()
