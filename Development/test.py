@@ -4,28 +4,51 @@ from SCAConv_dev import SCAConv
 from Depthwise_Separable_SCAC import SCAConv_DS
 import time
 
-batch = 1
-in_c = 8
-out_c = 16
-a = torch.ones(batch, in_c, 512, 512)
-conv1 = SCAConv(in_c, out_c, kernel_size=3, padding=1, stride=1)
-conv2 = nn.Conv2d(in_c, out_c, kernel_size=3, padding=1, stride=1)
-conv3 = SCAConv_DS(in_c, out_c, kernel_size=3, padding=1, stride=1)
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-start_time = time.time()
-output = conv1(a)
-end_time = time.time()
-print(f"Time taken for SCA-Conv: {end_time - start_time} seconds")
+batch = 4
+in_c = 3
+out_c = 8
+a = torch.ones(batch, in_c, 1024,1024).to(device)
 
-start_time = time.time()
-output = conv3(a)
-end_time = time.time()
-print(f"Time taken for Depthwise Separable SCA-Conv: {end_time - start_time} seconds")
+conv1 = SCAConv(in_c, out_c, kernel_size=3, padding=1, stride=1).to(device)
+conv2 = nn.Conv2d(in_c, out_c, kernel_size=3, padding=1, stride=1).to(device)
+conv3 = SCAConv_DS(in_c, out_c, kernel_size=3, padding=1, stride=1).to(device)
+
+torch.cuda.reset_peak_memory_stats(device)
 
 start_time = time.time()
 output = conv2(a)
 end_time = time.time()
-print(f"Time taken for nn.Conv2d: {end_time - start_time} seconds")
+print(f"Time taken for nn.Conv2d: {(end_time-start_time):.5f} seconds")
+print(f"Max VRAM usage for nn.Conv2d: {torch.cuda.max_memory_allocated(device) / 1024**2:.2f} MB")
+print()
+torch.cuda.empty_cache() if torch.cuda.is_available() else None
+
+time.sleep(0.5)
+torch.cuda.reset_peak_memory_stats(device)
+
+start_time = time.time()
+output = conv3(a)
+end_time = time.time()
+print(f"Time taken for Depthwise Separable SCA-Conv: {(end_time-start_time):.5f} seconds")
+print(f"Max VRAM usage for Depthwise Separable SCA-Conv: {torch.cuda.max_memory_allocated(device) / 1024**2:.2f} MB")
+print()
+torch.cuda.empty_cache() if torch.cuda.is_available() else None
+
+time.sleep(0.5)
+torch.cuda.reset_peak_memory_stats(device)
+
+start_time = time.time()
+output = conv1(a)
+end_time = time.time()
+print(f"Time taken for SCA-Conv: {(end_time-start_time):.5f} seconds")
+print(f"Max VRAM usage for SCA-Conv: {torch.cuda.max_memory_allocated(device) / 1024**2:.2f} MB")
+print()
+torch.cuda.empty_cache() if torch.cuda.is_available() else None
+
+
+
 
 
 # a = torch.ones(batch, in_c, 1024,1024)
