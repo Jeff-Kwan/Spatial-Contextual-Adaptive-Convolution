@@ -17,6 +17,7 @@ class SCAConv_DS(nn.Module):
         self.stride = stride if isinstance(stride, tuple) else (stride, stride)
         self.padding = padding if isinstance(padding, tuple) else (padding, padding)
         self.b = b  # Hyperparameter for adaptivity of kernel
+        self.a = nn.Parameter(torch.tensor(1.0))  # Hyperparameter for adaptivity of kernel
 
         # Unfold will be used to extract sliding local blocks from the input tensor
         self.unfold_D = nn.Unfold(kernel_size=self.kernel_size, stride=self.stride, padding=self.padding)
@@ -91,7 +92,7 @@ class SCAConv_DS(nn.Module):
         adjustments = self.mlp_D(torch.cat([location_embed, c], dim=-1).view(batch_size*c.size(1), -1)).view(batch_size, -1, self.kernel_size[0] * self.kernel_size[1])
 
         # Adaptive kernel adjustment injection
-        adjusted_kernel = self.kernel_D.flatten()[None,None,:] + self.b * adjustments  # Shape: (batch, kernel_h * kernel_w, L)
+        adjusted_kernel = self.kernel_D.flatten()[None,None,:] + self.b * self.a * adjustments  # Shape: (batch, kernel_h * kernel_w, L)
 
         # Matrix multiplication with einsum
         x = torch.einsum('bikl,blk->bikl', x_unfolded, adjusted_kernel)
@@ -102,7 +103,7 @@ class SCAConv_DS(nn.Module):
         adjustments = self.mlp_P(torch.cat([location_embed, c], dim=-1).view(batch_size*output_height*output_width, -1)).view(batch_size,output_height*output_width,self.in_channels,self.out_channels)
 
         # Adaptive kernel adjustment injection
-        adjusted_kernel = self.kernel_P[None,:,:] + self.b * adjustments  # Shape: (batch, kernel_h * kernel_w, L)
+        adjusted_kernel = self.kernel_P[None,:,:] + self.b * self.a * adjustments  # Shape: (batch, kernel_h * kernel_w, L)
         
         # Matrix multiplication with einsum
         x = torch.einsum('bikl,blio->bol', x, adjusted_kernel)  # Shape: (batch_size, in_channels, L, out_channels)
