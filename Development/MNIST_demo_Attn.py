@@ -3,7 +3,7 @@ from torch import nn, optim
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
-from SCAC_DS import SCAConv_DS
+from SCAC_DS_Attn import SCAC_DS_Attn
 
 # Define the SCA-CNN with self-context
 class SCACNN(nn.Module):
@@ -21,10 +21,9 @@ class SCACNN(nn.Module):
         )
 
         # SCA-CNN
-        h = 9 # Hidden units in the MLP of Adaptive Kernel
         self.conv1 = nn.Conv2d(1, 2, kernel_size=3, padding=1, stride=2)
-        self.sca1 = SCAConv_DS(2, 2, kernel_size=3, padding=1, stride=1, b=self.b, c_len=self.c_len, mlp_hidden=h, condition=True)
-        self.sca2 = SCAConv_DS(2, 2, kernel_size=3, padding=1, stride=1, b=self.b, c_len=self.c_len, mlp_hidden=h, condition=True)
+        self.sca1 = SCAC_DS_Attn(2, 2, kernel_size=3, padding=1, stride=1, b=self.b, c_len=self.c_len, condition=True)
+        self.sca2 = SCAC_DS_Attn(2, 2, kernel_size=3, padding=1, stride=1, b=self.b, c_len=self.c_len, condition=True)
         self.conv2 = nn.Conv2d(2, 2, kernel_size=3, padding=1, stride=2)
         self.silu = nn.SiLU()
         self.fc_out = nn.Sequential(
@@ -82,7 +81,7 @@ n_epochs = 3
 # Schedule Adaptive MLP Injection (optional)
 b_arr = torch.linspace(0, 1, (n_epochs-1)*len(train_loader))    
 train_losses = []
-print('Training the SCA-CNN-DS model...')
+print('Training the SCA-CNN-DS-Attn model...')
 for epoch in range(n_epochs):
     running_loss = 0.0
     for i, (images, labels) in enumerate(train_loader):
@@ -111,7 +110,7 @@ plt.plot(train_losses)
 plt.xlabel('Batch number')
 plt.ylabel('Loss')
 plt.title('Training Loss over Batches')
-plt.savefig(r'Spatial-Contextual-Adaptive-Convolution\Development\Outputs\MNIST_SCA_CNN_DS_loss.png')
+plt.savefig(r'Spatial-Contextual-Adaptive-Convolution\Development\Outputs\MNIST_SCA_CNN_DS_Attn_loss.png')
 plt.close()
 
 
@@ -160,23 +159,20 @@ with torch.no_grad():
 SCA_accuracy = 100 * SCA_correct / total
 ablation_accuracy = 100 * ablation_correct / total
 adaptive_accuracy = 100 * adaptive_correct / total
-print(f'SCA-CNN-DS accuracy on the 10,000 test images: {SCA_accuracy:.2f}%')
-print(f'Ablated SCA-CNN-DS accuracy on the 10,000 test images: {ablation_accuracy:.2f}%')
-print(f'Adaptive-only SCA-CNN-DS accuracy on the 10,000 test images: {adaptive_accuracy:.2f}%')
+print(f'SCA-CNN-DS-Attn accuracy on the 10,000 test images: {SCA_accuracy:.2f}%')
+print(f'Ablated SCA-CNN-DS-Attn accuracy on the 10,000 test images: {ablation_accuracy:.2f}%')
+print(f'Adaptive-only SCA-CNN-DS-Attn accuracy on the 10,000 test images: {adaptive_accuracy:.2f}%')
 
-print(f"SCA-CNN-DS sca1 mlp_D norms: {model.sca1.mlp[0].weight.norm():.2f}, {model.sca1.mlp[2].weight.norm():.2f}")
-print(f"SCA-CNN-DS sca2 mlp_D norms: {model.sca2.mlp[0].weight.norm():.2f}, {model.sca2.mlp[2].weight.norm():.2f}")
-
-print(f"SCA-DNN-DS sca1 Adaptive Importance: {model.sca1.a[0].item():.2f}, {model.sca1.a[1].item():.2f}")
-print(f"SCA-DNN-DS sca2 Adaptive Importance: {model.sca2.a[0].item():.2f}, {model.sca2.a[1].item():.2f}")
+print(f"SCA-DNN-DS-Attn sca1 Adaptive Importance: {model.sca1.a[0].item():.2f}, {model.sca1.a[1].item():.2f}")
+print(f"SCA-DNN-DS-Attn sca2 Adaptive Importance: {model.sca2.a[0].item():.2f}, {model.sca2.a[1].item():.2f}")
 
 
 # Save the test accuracy to the same text file
-with open(r"Spatial-Contextual-Adaptive-Convolution\Development\Outputs\MNIST_SCA_CNN_DS_results.txt", "w") as f:
+with open(r"Spatial-Contextual-Adaptive-Convolution\Development\Outputs\MNIST_SCA_CNN_DS_Attn_results.txt", "w") as f:
     total_params = count_parameters(model)
-    f.write(f"SCA-CNN-DS - Accuracy on the 10,000 test images: {SCA_accuracy:.2f}%\n")
-    f.write(f"Ablated SCA-CNN-DS - Accuracy on the 10,000 test images: {ablation_accuracy:.2f}%\n")
-    f.write(f"Adaptive-only SCA-CNN-DS - Accuracy on the 10,000 test images: {adaptive_accuracy:.2f}%\n\n")
-    f.write(f"SCA-CNN-DS - Final Training loss: {train_losses[-1]}\n")
-    f.write(f"SCA-CNN-DS - Total trainable parameters: {total_params}\n\n")
+    f.write(f"SCA-CNN-DS-Attn - Accuracy on the 10,000 test images: {SCA_accuracy:.2f}%\n")
+    f.write(f"Ablated SCA-CNN-DS-Attn - Accuracy on the 10,000 test images: {ablation_accuracy:.2f}%\n")
+    f.write(f"Adaptive-only SCA-CNN-DS-Attn - Accuracy on the 10,000 test images: {adaptive_accuracy:.2f}%\n\n")
+    f.write(f"SCA-CNN-DS-Attn - Final Training loss: {train_losses[-1]}\n")
+    f.write(f"SCA-CNN-DS-Attn - Total trainable parameters: {total_params}\n\n")
     f.write(str(model) + '\n\n')

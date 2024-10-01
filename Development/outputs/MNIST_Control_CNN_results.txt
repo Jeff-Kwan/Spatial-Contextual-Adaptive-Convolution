@@ -1,0 +1,20 @@
+Control-CNN - Accuracy of the model on the 10,000 test images: 71.92%
+Control-CNN - Final Training loss: 0.8383120894432068
+Control-CNN - Total trainable parameters: 7414
+
+SimpleCNN(
+  (convd1): Conv2d(1, 4, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+  (conv1): Conv2d(4, 4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+  (conv2): Conv2d(4, 4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+  (conv3): Conv2d(4, 4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+  (conv4): Conv2d(4, 4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+  (convd2): Conv2d(4, 4, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+  (silu): SiLU()
+  (fc_out): Sequential(
+    (0): Flatten(start_dim=1, end_dim=-1)
+    (1): Linear(in_features=196, out_features=32, bias=True)
+    (2): SiLU()
+    (3): Linear(in_features=32, out_features=10, bias=True)
+  )
+)
+

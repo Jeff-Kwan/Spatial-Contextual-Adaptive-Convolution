@@ -6,25 +6,28 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 from SCAC_DS import SCAConv_DS
 
-# Global Context Model
+# Simple Global Context Model
 class ContextNN(nn.Module):
     def __init__(self, c_len):
         super(ContextNN, self).__init__()
-        self.reduce1 = nn.Conv2d(3, 4, kernel_size=3, padding=1, stride=2)
-        self.reduce2 = nn.Conv2d(4, 8, kernel_size=3, padding=1, stride=2)
-        self.fc_context = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(8 * 8 * 8, c_len))
+        # self.reduce1 = nn.Conv2d(1, 1, kernel_size=3, padding=1, stride=2)
+        # self.reduce2 = nn.Conv2d(1, 1, kernel_size=3, padding=1, stride=2)
+        # self.fc_context = nn.Sequential(
+        #     nn.Flatten(),
+        #     nn.Linear(1 * 7 * 7, c_len))
         
-        # self.conv = nn.Conv1d(3,1,stride=52,kernel_size=256,padding=6) # c_len=16 only
+        self.conv = nn.Conv1d(1, 1, kernel_size=100, padding=1, stride=98) # c_len=8 only
+        # self.linear = nn.Linear(784, c_len)
         self.out = nn.Linear(c_len, 10)
 
     def encode(self, x):
-        c = F.relu(self.reduce1(x))
-        c = F.relu(self.reduce2(c))
-        c = self.fc_context(c)
+        # c = F.relu(self.reduce1(x))
+        # c = F.relu(self.reduce2(c))
+        # c = self.fc_context(c)
 
-        # c = self.conv(x.view(x.size(0), 3, -1)).squeeze()
+        c = self.conv(x.view(x.size(0), 1, -1)).squeeze()
+
+        # c = self.linear(x.view(x.size(0), -1))
         return c
 
     def forward(self, x, finetune=False):
@@ -47,45 +50,31 @@ class SCACNN(nn.Module):
         self.context = contextNN
 
         # SCA-CNN
-        h = 32 # Hidden units in the MLP of Adaptive Kernel
-        self.scaconvs1 = nn.ModuleList([
-            SCAConv_DS(3, 16, kernel_size=3, padding=1, stride=1, b=self.b, c_len=self.c_len, mlp_hidden=h, condition=True),
-            SCAConv_DS(32, 32, kernel_size=3, padding=1, stride=1, b=self.b, c_len=self.c_len, mlp_hidden=h, condition=True),
-            SCAConv_DS(64, 64, kernel_size=3, padding=1, stride=1, b=self.b, c_len=self.c_len, mlp_hidden=h, condition=True)
-            ])
-        self.scaconvs2 = nn.ModuleList([
-            SCAConv_DS(16, 32, kernel_size=3, padding=1, stride=2, b=self.b, c_len=self.c_len, mlp_hidden=h, condition=True),
-            SCAConv_DS(32, 64, kernel_size=3, padding=1, stride=2, b=self.b, c_len=self.c_len, mlp_hidden=h, condition=True),
-            SCAConv_DS(64, 128, kernel_size=3, padding=1, stride=2, b=self.b, c_len=self.c_len, mlp_hidden=h, condition=True)
-            ])
-
-        self.norms = nn.ModuleList([
-            nn.LayerNorm([16, 32, 32]),
-            nn.LayerNorm([32, 16, 16]),
-            nn.LayerNorm([64, 8, 8])
-            ])
-
+        h = 16 # Hidden units in the MLP of Adaptive Kernel
+        self.scaconv1 = SCAConv_DS(1, 2, kernel_size=3, padding=1, stride=2, b=self.b, c_len=self.c_len, mlp_hidden=h, condition=True)
+        self.scaconv2 = SCAConv_DS(2, 2, kernel_size=3, padding=1, stride=2, b=self.b, c_len=self.c_len, mlp_hidden=h, condition=True)
         self.relu = nn.ReLU()
         self.fc_out = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(128 * 4 * 4, 256),
+            nn.Linear(2 * 7 * 7, 32),
             nn.ReLU(),
-            nn.Linear(256, 10))
+            nn.Linear(32, 10))
     
 
     def forward(self, x):
+        # Set b
+        self.scaconv1.b = self.b
+        self.scaconv2.b = self.b
+
         # Global context
         # with torch.no_grad():
         #    c = self.context.encode(x)
         c = self.context.encode(x)
         # c = torch.ones((x.shape[0],8))
 
-        # SCA-CNN
-        for scac1, scac2, norm in zip(self.scaconvs1, self.scaconvs2, self.norms):
-            scac1.b = self.b
-            scac2.b = self.b
-            x = norm(scac1(x, c))
-            x = self.relu(scac2(x, c))
+        # SCA-CNN with global context
+        x = self.relu(self.scaconv1(x, c))
+        x = self.relu(self.scaconv2(x, c))
         x = self.fc_out(x)
         return x
 
@@ -98,15 +87,15 @@ def count_parameters(model):
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Data loading and transformation
-batch = 128
-transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-train_data = datasets.CIFAR10(root='./data', train=True, download=False, transform=transform)
-test_data = datasets.CIFAR10(root='./data', train=False, download=False, transform=transform)
-train_loader = DataLoader(train_data, batch_size=batch, shuffle=True)
-test_loader = DataLoader(test_data, batch_size=batch, shuffle=False)
+batch_size = 128
+transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
+train_data = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
+test_data = datasets.MNIST(root='./data', train=False, download=True, transform=transform)
+train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False)
 
 # Initialize the model, loss function, and optimizer
-c_len = 16
+c_len = 8
 contextNN = ContextNN(c_len).to(device)
 model = SCACNN(contextNN, c_len).to(device)
 criterion = nn.CrossEntropyLoss()
@@ -132,7 +121,7 @@ for epoch in range(n_epochs):
 
 
 # Train the model
-n_epochs = 5
+n_epochs = 3
 # Schedule Adaptive MLP Injection (optional)
 b_arr = torch.linspace(0, 1, (n_epochs-1)*len(train_loader))    
 train_losses = []
@@ -165,7 +154,7 @@ plt.plot(train_losses)
 plt.xlabel('Batch number')
 plt.ylabel('Loss')
 plt.title('Training Loss over Batches')
-plt.savefig(r'Spatial-Contextual-Adaptive-Convolution\Development\Outputs\CIFAR10_SCA_CNN_DS_loss.png')
+plt.savefig(r'Spatial-Contextual-Adaptive-Convolution\Development\Outputs\SCA_CNN_DS_loss.png')
 plt.close()
 
 # Fine tuning ContextNN linear readout
@@ -190,6 +179,7 @@ for epoch in range(n_epochs):
 context_correct = 0
 SCA_correct = 0
 ablation_correct = 0
+adaptive_correct = 0
 total = 0
 with torch.no_grad():
     model.eval()
@@ -207,6 +197,23 @@ with torch.no_grad():
         _, SCA_pred = torch.max(sca_outputs.data, 1)
         SCA_correct += (SCA_pred == labels).sum().item()
 
+        # Adaptive kernel study
+        k11 = model.scaconv1.kernel_D.detach().clone()
+        k12 = model.scaconv1.kernel_P.detach().clone()
+        k21 = model.scaconv2.kernel_D.detach().clone()
+        k22 = model.scaconv2.kernel_P.detach().clone()
+        model.scaconv1.kernel_D -= k11
+        model.scaconv1.kernel_P -= k12
+        model.scaconv2.kernel_D -= k21
+        model.scaconv2.kernel_P -= k22
+        adaptive_outputs = model(images)
+        _, adaptive_pred = torch.max(adaptive_outputs.data, 1)
+        adaptive_correct += (adaptive_pred == labels).sum().item()
+        model.scaconv1.kernel_D += k11
+        model.scaconv1.kernel_P += k12
+        model.scaconv2.kernel_D += k21
+        model.scaconv2.kernel_P += k22
+
         # Ablation study
         model.b = 0
         ablation_outputs = model(images)
@@ -218,22 +225,24 @@ with torch.no_grad():
 context_accuracy = 100 * context_correct / total
 SCA_accuracy = 100 * SCA_correct / total
 ablation_accuracy = 100 * ablation_correct / total
+adaptive_accuracy = 100 * adaptive_correct / total
 print(f'ContextNN accuracy on the 10,000 test images: {context_accuracy:.2f}%')
 print(f'SCA-CNN-DS accuracy on the 10,000 test images: {SCA_accuracy:.2f}%')
 print(f'Ablated SCA-CNN-DS accuracy on the 10,000 test images: {ablation_accuracy:.2f}%')
-print()
+print(f'Adaptive-only SCA-CNN-DS accuracy on the 10,000 test images: {adaptive_accuracy:.2f}%')
 
-for sca in model.scaconvs1:
-    print(f"SCAC-1 Adaptive Importance is {sca.a.item()}")
-for sca in model.scaconvs2:
-    print(f"SCAC-2 Adaptive Importance is {sca.a.item()}")
+print(f"SCA-CNN-DS scaconv1 mlp_D norms: {model.scaconv1.mlp_D[0].weight.norm():.2f}, {model.scaconv1.mlp_D[2].weight.norm():.2f}")
+print(f"SCA-CNN-DS scaconv1 mlp_P norms: {model.scaconv1.mlp_P[0].weight.norm():.2f}, {model.scaconv1.mlp_P[2].weight.norm():.2f}")
+print(f"SCA-CNN-DS scaconv2 mlp_D norms: {model.scaconv2.mlp_D[0].weight.norm():.2f}, {model.scaconv2.mlp_D[2].weight.norm():.2f}")
+print(f"SCA-CNN-DS scaconv2 mlp_P norms: {model.scaconv2.mlp_P[0].weight.norm():.2f}, {model.scaconv2.mlp_P[2].weight.norm():.2f}")
 
 
 # Save the test accuracy to the same text file
-with open(r"Spatial-Contextual-Adaptive-Convolution\Development\Outputs\CIFAR10_SCA_CNN_DS_results.txt", "w") as f:
+with open(r"Spatial-Contextual-Adaptive-Convolution\Development\Outputs\SCA_CNN_DS_results.txt", "w") as f:
     total_params = count_parameters(model)
     f.write(f"SCA-CNN-DS - Accuracy on the 10,000 test images: {SCA_accuracy:.2f}%\n")
     f.write(f"Ablated SCA-CNN-DS - Accuracy on the 10,000 test images: {ablation_accuracy:.2f}%\n")
+    f.write(f"Adaptive-only SCA-CNN-DS - Accuracy on the 10,000 test images: {adaptive_accuracy:.2f}%\n\n")
     f.write(f"SCA-CNN-DS - Final Training loss: {train_losses[-1]}\n")
     f.write(f"SCA-CNN-DS - Total trainable parameters: {total_params}\n\n")
     f.write(f"ContextNN - Accuracy on the 10,000 test images: {context_accuracy:.2f}%\n")

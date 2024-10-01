@@ -1,0 +1,41 @@
+SCA-CNN-DS - Accuracy on the 10,000 test images: 75.52%
+Ablated SCA-CNN-DS - Accuracy on the 10,000 test images: 30.06%
+Adaptive-only SCA-CNN-DS - Accuracy on the 10,000 test images: 9.85%
+
+SCA-CNN-DS - Final Training loss: 0.7503319382667542
+SCA-CNN-DS - Total trainable parameters: 5679
+
+SCACNN(
+  (c1): Sequential(
+    (0): Conv2d(2, 1, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (1): SiLU()
+    (2): Flatten(start_dim=1, end_dim=-1)
+    (3): Linear(in_features=196, out_features=8, bias=True)
+  )
+  (conv1): Conv2d(1, 2, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+  (sca1): SCAConv_DS(
+    (unfold): Unfold(kernel_size=(3, 3), dilation=1, padding=(1, 1), stride=(1, 1))
+    (mlp): Sequential(
+      (0): Linear(in_features=12, out_features=9, bias=True)
+      (1): SiLU()
+      (2): Linear(in_features=9, out_features=13, bias=True)
+    )
+  )
+  (sca2): SCAConv_DS(
+    (unfold): Unfold(kernel_size=(3, 3), dilation=1, padding=(1, 1), stride=(1, 1))
+    (mlp): Sequential(
+      (0): Linear(in_features=12, out_features=9, bias=True)
+      (1): SiLU()
+      (2): Linear(in_features=9, out_features=13, bias=True)
+    )
+  )
+  (conv2): Conv2d(2, 2, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+  (silu): SiLU()
+  (fc_out): Sequential(
+    (0): Flatten(start_dim=1, end_dim=-1)
+    (1): Linear(in_features=98, out_features=32, bias=True)
+    (2): SiLU()
+    (3): Linear(in_features=32, out_features=10, bias=True)
+  )
+)
+

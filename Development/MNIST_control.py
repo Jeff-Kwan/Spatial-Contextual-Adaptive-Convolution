@@ -8,19 +8,25 @@ class SimpleCNN(nn.Module):
     def __init__(self):
         super(SimpleCNN, self).__init__()
         # Simple CNN control
-        self.scaconv1 = nn.Conv2d(1, 2, kernel_size=3, padding=1, stride=2)
-        self.scaconv2 = nn.Conv2d(2, 4, kernel_size=3, padding=1, stride=2)
-        self.relu = nn.ReLU()
+        self.convd1 = nn.Conv2d(1, 4, kernel_size=3, padding=1, stride=2)
+        self.conv1 = nn.Conv2d(4, 4, kernel_size=3, padding=1, stride=1)
+        self.conv2 = nn.Conv2d(4, 4, kernel_size=3, padding=1, stride=1)
+        self.conv3 = nn.Conv2d(4, 4, kernel_size=3, padding=1, stride=1)
+        self.conv4 = nn.Conv2d(4, 4, kernel_size=3, padding=1, stride=1)
+        self.convd2 = nn.Conv2d(4, 4, kernel_size=3, padding=1, stride=2)
+        self.silu = nn.SiLU()
         self.fc_out = nn.Sequential(
             nn.Flatten(),
             nn.Linear(4 * 7 * 7, 32),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Linear(32, 10))
     
 
     def forward(self, x):
-        x = self.relu(self.scaconv1(x))
-        x = self.relu(self.scaconv2(x))
+        x = self.silu(self.convd1(x))
+        x = self.silu(x + self.conv2(self.silu(self.conv1(x))))
+        x = self.silu(x + self.conv4(self.silu(self.conv3(x))))
+        x = self.silu(self.convd2(x))
         x = self.fc_out(x)
         return x
 
@@ -28,12 +34,21 @@ class SimpleCNN(nn.Module):
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-# Data loading and transformation
+# Set the device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
-train_data = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
-test_data = datasets.MNIST(root='./data', train=False, download=True, transform=transform)
 
+# Transformation for training data with data augmentation
+train_transform = transforms.Compose([
+    transforms.RandomHorizontalFlip(),  
+    transforms.RandomVerticalFlip(),  
+    transforms.RandomCrop(28, padding=4),
+    transforms.ToTensor(), 
+    transforms.Normalize((0.5,), (0.5,))])
+test_transform = transforms.Compose([
+    transforms.ToTensor(), 
+    transforms.Normalize((0.5,), (0.5,))])
+train_data = datasets.MNIST(root='./data', train=True, download=True, transform=train_transform)
+test_data = datasets.MNIST(root='./data', train=False, download=True, transform=test_transform)
 train_loader = DataLoader(train_data, batch_size=128, shuffle=True)
 test_loader = DataLoader(test_data, batch_size=128, shuffle=False)
 
@@ -73,7 +88,7 @@ plt.plot(train_losses)
 plt.xlabel('Batch number')
 plt.ylabel('Loss')
 plt.title('Training Loss over Batches (Control)')
-plt.savefig(r'Spatial-Contextual-Adaptive-Convolution\Development\Outputs\Control_CNN_loss.png')
+plt.savefig(r'Spatial-Contextual-Adaptive-Convolution\Development\Outputs\MNIST_Control_CNN_loss.png')
 
 # Test the model
 correct = 0
@@ -90,7 +105,7 @@ accuracy = 100 * correct / total
 print(f'Control CNN accuracy on the 10,000 test images: {accuracy:.2f}%')
 
 # Save the test accuracy to the same text file
-with open(r"Spatial-Contextual-Adaptive-Convolution\Development\Outputs\Control_CNN_results.txt", "w") as f:
+with open(r"Spatial-Contextual-Adaptive-Convolution\Development\Outputs\MNIST_Control_CNN_results.txt", "w") as f:
     total_params = count_parameters(model)
     f.write(f"Control-CNN - Accuracy of the model on the 10,000 test images: {accuracy:.2f}%\n")
     f.write(f"Control-CNN - Final Training loss: {train_losses[-1]}\n")
