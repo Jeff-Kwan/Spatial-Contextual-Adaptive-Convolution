@@ -1,3 +1,7 @@
+# Custom ignores
+Spatial-Contextual-Adaptive-Convolution/Development/outputs
+Spatial-Contextual-Adaptive-Convolution/Development/__pycache__
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -120,7 +124,3 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
-
-# Custom ignores
-Spatial-Contextual-Adaptive-Convolution/Development/outputs
-Spatial-Contextual-Adaptive-Convolution/Development/__pycache__
