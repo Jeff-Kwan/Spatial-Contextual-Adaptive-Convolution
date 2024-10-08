@@ -4,6 +4,7 @@ from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 
+
 class SimpleCNN(nn.Module):
     def __init__(self):
         super(SimpleCNN, self).__init__()
@@ -39,9 +40,9 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Transformation for training data with data augmentation
 train_transform = transforms.Compose([
-    transforms.RandomHorizontalFlip(),  
-    transforms.RandomVerticalFlip(),  
+    transforms.RandomAffine(degrees=0, translate=(0.1, 0.1), scale=(0.9, 1.1), shear=0.1,),
     transforms.RandomCrop(28, padding=4),
+    transforms.RandomRotation(10),
     transforms.ToTensor(), 
     transforms.Normalize((0.5,), (0.5,))])
 test_transform = transforms.Compose([
@@ -58,7 +59,7 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Train the model
-n_epochs = 3
+n_epochs = 5
 b_arr = torch.linspace(0, 1, (n_epochs-1)*len(train_loader)).to(device)
 train_losses = []
 print('Training the Control CNN model...')

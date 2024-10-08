@@ -1,8 +1,8 @@
-SCA-CNN-DS - Accuracy on the 10,000 test images: 75.52%
-Ablated SCA-CNN-DS - Accuracy on the 10,000 test images: 30.06%
-Adaptive-only SCA-CNN-DS - Accuracy on the 10,000 test images: 9.85%
+SCA-CNN-DS - Accuracy on the 10,000 test images: 93.21%
+Ablated SCA-CNN-DS - Accuracy on the 10,000 test images: 38.19%
+Adaptive-only SCA-CNN-DS - Accuracy on the 10,000 test images: 0.83%
 
-SCA-CNN-DS - Final Training loss: 0.7503319382667542
+SCA-CNN-DS - Final Training loss: 0.3946250379085541
 SCA-CNN-DS - Total trainable parameters: 5679
 
 SCACNN(

@@ -57,9 +57,9 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Transformation for training data with data augmentation
 train_transform = transforms.Compose([
-    transforms.RandomHorizontalFlip(),  
-    transforms.RandomVerticalFlip(),  
+    transforms.RandomAffine(degrees=0, translate=(0.1, 0.1), scale=(0.9, 1.1), shear=0.1,),
     transforms.RandomCrop(28, padding=4),
+    transforms.RandomRotation(10),
     transforms.ToTensor(), 
     transforms.Normalize((0.5,), (0.5,))])
 test_transform = transforms.Compose([
@@ -78,7 +78,7 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 
 # Train the model
-n_epochs = 3
+n_epochs = 1
 # Schedule Adaptive MLP Injection (optional)
 b_arr = torch.linspace(0, 1, (n_epochs-1)*len(train_loader))    
 train_losses = []
@@ -170,6 +170,9 @@ print(f"SCA-CNN-DS sca2 mlp_D norms: {model.sca2.mlp[0].weight.norm():.2f}, {mod
 print(f"SCA-DNN-DS sca1 Adaptive Importance: {model.sca1.a[0].item():.2f}, {model.sca1.a[1].item():.2f}")
 print(f"SCA-DNN-DS sca2 Adaptive Importance: {model.sca2.a[0].item():.2f}, {model.sca2.a[1].item():.2f}")
 
+# Save the model
+script = torch.jit.script(model)
+torch.jit.save(script, r"Spatial-Contextual-Adaptive-Convolution\Development\Outputs\MNIST_SCA_CNN_DS.pth")
 
 # Save the test accuracy to the same text file
 with open(r"Spatial-Contextual-Adaptive-Convolution\Development\Outputs\MNIST_SCA_CNN_DS_results.txt", "w") as f:

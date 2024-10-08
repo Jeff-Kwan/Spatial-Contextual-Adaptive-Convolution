@@ -1,7 +1,10 @@
 '''
-Second Draft of Spatial-Contextual Adaptive Convolution - Conditional.
+Third Draft of Spatial-Contextual Adaptive Convolution - Conditional.
 Drafted by Kwan Leong Chit Jeff, with aid from Github Copilot & ChatGPT4o.
 Reimplement in depthwise-separable style to mitigate potential high computational load.
+
+Optimized for calculation but incompatible with torch.jit.save for unknown reasons 
+    (likely due self.c and self.location_embed).
 '''
 
 import torch
@@ -99,54 +102,3 @@ class SCAConv_DS(nn.Module):
 
         # Reshape the output 
         return z.view(batch_size, self.out_channels, output_height, output_width)
-
-    
-
-
-
-'''Testing function for development'''
-# Test function to compare SCAConv with nn.Conv2d
-def test_patch_conv2d_equivalence():
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    # Set parameters
-    batch_size = 7
-    in_channels = 13
-    out_channels = 11
-    kernel_size = (3, 3)
-    stride = (2, 2)
-    padding = (1, 1)
-    height, width = 28, 28
-    c_len=8
-
-    # Create input tensor
-    input_tensor = torch.randn(batch_size, in_channels, height, width).to(device)
-
-    # Initialize both SCAConv and nn.Conv2d with the same kernel and parameters
-    patch_conv = SCAConv_DS(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding, bias=False, c_len=c_len, condition=False).to(device)
-    conv2d = nn.Sequential(
-        nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=kernel_size, stride=stride, padding=padding, bias=False, groups=in_channels),
-        nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0), bias=False)
-        ).to(device)
-
-    # Set all weights to 1.0
-    patch_conv.kernel_D.data.fill_(1.)
-    patch_conv.kernel_P.data.fill_(1.)
-    conv2d[0].weight.data.fill_(1.)
-    conv2d[1].weight.data.fill_(1.)
-
-    # Get outputs from both layers
-    patch_conv.b = 0
-    patch_conv_output = patch_conv(input_tensor)
-    conv2d_output = conv2d(input_tensor)
-
-    # Assert that both outputs are close around order of 1e-5
-    diff = torch.abs(patch_conv_output - conv2d_output)
-    assert torch.allclose(patch_conv_output, conv2d_output, atol=1e-5), f"Diff max {diff.max()}"
-    assert diff.mean() < 1e-6, f"Diff mean {diff.mean()}"
-    print("Diff stats: max {:.4e}, mean {:.4e}".format(diff.max(), diff.mean()))
-    print("Test passed! SCAConv matches nn.Conv2d.")
-
-# Run the test
-if __name__ == "__main__":
-    test_patch_conv2d_equivalence()
